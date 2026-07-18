@@ -1,0 +1,40 @@
+# .NET
+bin/
+obj/
+*.user
+*.suo
+
+# Angular / Node
+node_modules/
+dist/
+.angular/
+coverage/
+
+# Environment files
+.env
+.env.*
+!.env.example
+
+# IDE
+.vs/
+.idea/
+
+# Visual Studio Code
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+
+# Operating system
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Azure
+.azure/
+
+# Local databases
+*.db
+*.db-shm
+*.db-wal
