@@ -5,6 +5,7 @@ import { Observable } from 'rxjs';
 import {
     CreateRiskRequest,
     Risk,
+    RiskStatus,
 } from '../models/risk';
 
 @Injectable({
@@ -17,7 +18,9 @@ export class RiskApiService {
         'http://localhost:5014/api/risks';
 
     getRisks(): Observable<Risk[]> {
-        return this.httpClient.get<Risk[]>(this.apiUrl);
+        return this.httpClient.get<Risk[]>(
+            this.apiUrl,
+        );
     }
 
     createRisk(
@@ -26,6 +29,18 @@ export class RiskApiService {
         return this.httpClient.post<Risk>(
             this.apiUrl,
             request,
+        );
+    }
+
+    updateRiskStatus(
+        riskId: string,
+        status: RiskStatus,
+    ): Observable<Risk> {
+        return this.httpClient.patch<Risk>(
+            `${this.apiUrl}/${riskId}/status`,
+            {
+                status,
+            },
         );
     }
 }

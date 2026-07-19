@@ -20,6 +20,7 @@ import {
   Risk,
   riskSeverities,
   RiskSeverity,
+  RiskStatus,
 } from './core/models/risk';
 import { HealthApiService } from './core/services/health-api.service';
 import { RiskApiService } from './core/services/risk-api.service';
@@ -34,9 +35,12 @@ import { RiskApiService } from './core/services/risk-api.service';
   styleUrl: './app.css',
 })
 export class App implements OnInit {
-  private readonly formBuilder = inject(FormBuilder);
+  private readonly formBuilder =
+    inject(FormBuilder);
+
   private readonly healthApiService =
     inject(HealthApiService);
+
   private readonly riskApiService =
     inject(RiskApiService);
 
@@ -51,6 +55,9 @@ export class App implements OnInit {
 
   protected readonly isSaving =
     signal(false);
+
+  protected readonly updatingRiskId =
+    signal<string | null>(null);
 
   protected readonly errorMessage =
     signal<string | null>(null);
@@ -89,8 +96,10 @@ export class App implements OnInit {
     this.errorMessage.set(null);
 
     forkJoin({
-      health: this.healthApiService.getHealth(),
-      risks: this.riskApiService.getRisks(),
+      health:
+        this.healthApiService.getHealth(),
+      risks:
+        this.riskApiService.getRisks(),
     })
       .pipe(
         finalize(() => {
@@ -119,7 +128,8 @@ export class App implements OnInit {
     this.isSaving.set(true);
     this.errorMessage.set(null);
 
-    const request = this.riskForm.getRawValue();
+    const request =
+      this.riskForm.getRawValue();
 
     this.riskApiService
       .createRisk(request)
@@ -130,10 +140,12 @@ export class App implements OnInit {
       )
       .subscribe({
         next: (risk) => {
-          this.risks.update((currentRisks) => [
-            risk,
-            ...currentRisks,
-          ]);
+          this.risks.update(
+            (currentRisks) => [
+              risk,
+              ...currentRisks,
+            ],
+          );
 
           this.riskForm.reset({
             title: '',
@@ -144,6 +156,46 @@ export class App implements OnInit {
         error: () => {
           this.errorMessage.set(
             'The risk could not be created.',
+          );
+        },
+      });
+  }
+
+  protected changeRiskStatus(
+    riskId: string,
+    status: RiskStatus,
+  ): void {
+    if (this.updatingRiskId() !== null) {
+      return;
+    }
+
+    this.updatingRiskId.set(riskId);
+    this.errorMessage.set(null);
+
+    this.riskApiService
+      .updateRiskStatus(
+        riskId,
+        status,
+      )
+      .pipe(
+        finalize(() => {
+          this.updatingRiskId.set(null);
+        }),
+      )
+      .subscribe({
+        next: (updatedRisk) => {
+          this.risks.update(
+            (currentRisks) =>
+              currentRisks.map((risk) =>
+                risk.id === updatedRisk.id
+                  ? updatedRisk
+                  : risk,
+              ),
+          );
+        },
+        error: () => {
+          this.errorMessage.set(
+            'The risk status could not be updated.',
           );
         },
       });
