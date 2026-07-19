@@ -13,6 +13,10 @@ public static class RiskEndpoints
         group.MapGet("/{id:guid}", GetByIdAsync);
         group.MapPost("", CreateAsync);
 
+        group.MapPatch(
+            "/{id:guid}/status",
+            UpdateStatusAsync);
+
         return endpoints;
     }
 
@@ -77,6 +81,36 @@ public static class RiskEndpoints
             response);
     }
 
+    private static async Task<IResult> UpdateStatusAsync(
+        Guid id,
+        UpdateRiskStatusRequest request,
+        IRiskRepository repository,
+        CancellationToken cancellationToken)
+    {
+        if (!Enum.IsDefined(request.Status))
+        {
+            return Results.ValidationProblem(
+                new Dictionary<string, string[]>
+                {
+                    ["status"] =
+                    [
+                        "Status is invalid."
+                    ]
+                });
+        }
+
+        var risk =
+            await repository.UpdateStatusAsync(
+                id,
+                request.Status,
+                cancellationToken);
+
+        return risk is null
+            ? Results.NotFound()
+            : Results.Ok(
+                RiskResponse.FromRisk(risk));
+    }
+
     private static Dictionary<string, string[]> Validate(
         CreateRiskRequest request)
     {
@@ -115,9 +149,7 @@ public static class RiskEndpoints
             ];
         }
 
-        if (!Enum.IsDefined(
-                typeof(RiskSeverity),
-                request.Severity))
+        if (!Enum.IsDefined(request.Severity))
         {
             errors["severity"] =
             [

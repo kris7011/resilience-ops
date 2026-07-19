@@ -212,6 +212,130 @@ public sealed class RiskEndpointTests
             HttpStatusCode.NotFound,
             response.StatusCode);
     }
+
+    [Fact]
+    public async Task UpdateRiskStatus_ExistingRisk_PersistsNewStatus()
+    {
+        var createRequest = new
+        {
+            title =
+                $"Authentication dependency {Guid.NewGuid():N}",
+            description =
+                "Loss of authentication could prevent access to critical systems.",
+            severity = "High"
+        };
+
+        var createResponse =
+            await client.PostAsJsonAsync(
+                "/api/risks",
+                createRequest);
+
+        Assert.Equal(
+            HttpStatusCode.Created,
+            createResponse.StatusCode);
+
+        var createdRisk =
+            await createResponse.Content
+                .ReadFromJsonAsync<RiskApiResponse>();
+
+        Assert.NotNull(createdRisk);
+
+        var updateRequest = new
+        {
+            status = "Mitigating"
+        };
+
+        var updateResponse =
+            await client.PatchAsJsonAsync(
+                $"/api/risks/{createdRisk.Id}/status",
+                updateRequest);
+
+        Assert.Equal(
+            HttpStatusCode.OK,
+            updateResponse.StatusCode);
+
+        var updatedRisk =
+            await updateResponse.Content
+                .ReadFromJsonAsync<RiskApiResponse>();
+
+        Assert.NotNull(updatedRisk);
+
+        Assert.Equal(
+            "Mitigating",
+            updatedRisk.Status);
+
+        var getResponse =
+            await client.GetAsync(
+                $"/api/risks/{createdRisk.Id}");
+
+        Assert.Equal(
+            HttpStatusCode.OK,
+            getResponse.StatusCode);
+
+        var persistedRisk =
+            await getResponse.Content
+                .ReadFromJsonAsync<RiskApiResponse>();
+
+        Assert.NotNull(persistedRisk);
+
+        Assert.Equal(
+            "Mitigating",
+            persistedRisk.Status);
+    }
+
+    [Fact]
+    public async Task UpdateRiskStatus_UnknownRisk_ReturnsNotFound()
+    {
+        var unknownId = Guid.NewGuid();
+
+        var request = new
+        {
+            status = "Closed"
+        };
+
+        var response =
+            await client.PatchAsJsonAsync(
+                $"/api/risks/{unknownId}/status",
+                request);
+
+        Assert.Equal(
+            HttpStatusCode.NotFound,
+            response.StatusCode);
+    }
+
+    [Fact]
+    public async Task UpdateRiskStatus_InvalidStatus_ReturnsValidationProblem()
+    {
+        var request = new
+        {
+            status = 999
+        };
+
+        var response =
+            await client.PatchAsJsonAsync(
+                $"/api/risks/{Guid.NewGuid()}/status",
+                request);
+
+        Assert.Equal(
+            HttpStatusCode.BadRequest,
+            response.StatusCode);
+
+        var validationProblem =
+            await response.Content
+                .ReadFromJsonAsync<
+                    ValidationProblemResponse>();
+
+        Assert.NotNull(validationProblem);
+
+        Assert.True(
+            validationProblem.Errors.TryGetValue(
+                "status",
+                out var statusErrors));
+
+        Assert.Contains(
+            "Status is invalid.",
+            statusErrors);
+    }
 }
 
 internal sealed record RiskApiResponse(

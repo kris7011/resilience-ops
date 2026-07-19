@@ -12,4 +12,9 @@ public interface IRiskRepository
     Task AddAsync(
         RiskItem risk,
         CancellationToken cancellationToken);
+
+    Task<RiskItem?> UpdateStatusAsync(
+        Guid id,
+        RiskStatus status,
+        CancellationToken cancellationToken);
 }

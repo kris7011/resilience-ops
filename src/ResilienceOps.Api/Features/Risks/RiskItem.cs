@@ -49,4 +49,25 @@ public sealed class RiskItem
             status: RiskStatus.Open,
             createdUtc: DateTimeOffset.UtcNow);
     }
+
+    public bool ChangeStatus(
+        RiskStatus newStatus)
+    {
+        if (!Enum.IsDefined(newStatus))
+        {
+            throw new ArgumentOutOfRangeException(
+                nameof(newStatus),
+                newStatus,
+                "The risk status is invalid.");
+        }
+
+        if (Status == newStatus)
+        {
+            return false;
+        }
+
+        Status = newStatus;
+
+        return true;
+    }
 }
