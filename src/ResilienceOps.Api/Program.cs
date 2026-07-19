@@ -1,5 +1,8 @@
 using System.Text.Json.Serialization;
+using Azure.Monitor.OpenTelemetry.AspNetCore;
 using Microsoft.EntityFrameworkCore;
+using OpenTelemetry.Resources;
+using OpenTelemetry.Trace;
 using ResilienceOps.Api.Contracts;
 using ResilienceOps.Api.Data;
 using ResilienceOps.Api.Features.Risks;
@@ -7,6 +10,36 @@ using ResilienceOps.Api.Features.Risks;
 const string FrontendCorsPolicy = "Frontend";
 
 var builder = WebApplication.CreateBuilder(args);
+
+var serviceName =
+    builder.Configuration["OpenTelemetry:ServiceName"]
+    ?? "ResilienceOps.Api";
+
+var applicationInsightsConnectionString =
+    builder.Configuration[
+        "APPLICATIONINSIGHTS_CONNECTION_STRING"];
+
+if (!string.IsNullOrWhiteSpace(
+        applicationInsightsConnectionString))
+{
+    builder.Services
+        .AddOpenTelemetry()
+        .ConfigureResource(resource =>
+        {
+            resource.AddService(
+                serviceName: serviceName);
+        })
+        .WithTracing(tracing =>
+        {
+            tracing.AddSource(
+                RiskTelemetry.ActivitySourceName);
+        })
+        .UseAzureMonitor(options =>
+        {
+            options.ConnectionString =
+                applicationInsightsConnectionString;
+        });
+}
 
 builder.Services.ConfigureHttpJsonOptions(options =>
 {
@@ -51,6 +84,24 @@ builder.Services.AddScoped<
 
 var app = builder.Build();
 
+var startupLogger =
+    app.Services
+        .GetRequiredService<ILoggerFactory>()
+        .CreateLogger("ResilienceOps.Startup");
+
+if (string.IsNullOrWhiteSpace(
+        applicationInsightsConnectionString))
+{
+    startupLogger.LogInformation(
+        "Azure Monitor telemetry is disabled because no Application Insights connection string is configured");
+}
+else
+{
+    startupLogger.LogInformation(
+        "Azure Monitor telemetry is enabled for service {ServiceName}",
+        serviceName);
+}
+
 await using (var scope =
     app.Services.CreateAsyncScope())
 {
@@ -70,7 +121,7 @@ app.MapGet(
     {
         var response = new HealthResponse(
             Status: "Healthy",
-            Service: "ResilienceOps.Api",
+            Service: serviceName,
             Environment:
                 environment.EnvironmentName,
             TimestampUtc:
