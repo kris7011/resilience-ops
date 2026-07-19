@@ -5,6 +5,7 @@ using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
 using ResilienceOps.Api.Contracts;
 using ResilienceOps.Api.Data;
+using ResilienceOps.Api.Features.Mitigations;
 using ResilienceOps.Api.Features.Risks;
 
 const string FrontendCorsPolicy = "Frontend";
@@ -32,7 +33,8 @@ if (!string.IsNullOrWhiteSpace(
         .WithTracing(tracing =>
         {
             tracing.AddSource(
-                RiskTelemetry.ActivitySourceName);
+                RiskTelemetry.ActivitySourceName,
+                MitigationTelemetry.ActivitySourceName);
         })
         .UseAzureMonitor(options =>
         {
@@ -81,6 +83,10 @@ builder.Services.AddDbContext<
 builder.Services.AddScoped<
     IRiskRepository,
     EfCoreRiskRepository>();
+
+builder.Services.AddScoped<
+    IMitigationRepository,
+    EfCoreMitigationRepository>();
 
 var app = builder.Build();
 
@@ -131,6 +137,7 @@ app.MapGet(
     });
 
 app.MapRiskEndpoints();
+app.MapMitigationEndpoints();
 
 app.Run();
 
