@@ -1,8 +1,16 @@
+using System.Text.Json.Serialization;
 using ResilienceOps.Api.Contracts;
+using ResilienceOps.Api.Features.Risks;
 
 const string FrontendCorsPolicy = "Frontend";
 
 var builder = WebApplication.CreateBuilder(args);
+
+builder.Services.ConfigureHttpJsonOptions(options =>
+{
+    options.SerializerOptions.Converters.Add(
+        new JsonStringEnumConverter());
+});
 
 builder.Services.AddCors(options =>
 {
@@ -16,6 +24,10 @@ builder.Services.AddCors(options =>
                 .AllowAnyMethod();
         });
 });
+
+builder.Services.AddSingleton<
+    IRiskRepository,
+    InMemoryRiskRepository>();
 
 var app = builder.Build();
 
@@ -33,5 +45,7 @@ app.MapGet(
 
         return Results.Ok(response);
     });
+
+app.MapRiskEndpoints();
 
 app.Run();
