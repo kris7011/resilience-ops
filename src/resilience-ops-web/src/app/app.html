@@ -82,7 +82,8 @@
               placeholder="Example: Identity provider outage" />
 
             @if (
-            riskForm.controls.title.touched &&
+            riskForm.controls.title.touched
+            &&
             riskForm.controls.title.invalid
             ) {
             <p class="mt-1 text-sm text-red-700">
@@ -120,7 +121,8 @@
               placeholder="Describe the operational impact and affected business process."></textarea>
 
             @if (
-            riskForm.controls.description.touched &&
+            riskForm.controls.description.touched
+            &&
             riskForm.controls.description.invalid
             ) {
             <p class="mt-1 text-sm text-red-700">
@@ -252,6 +254,20 @@
                   }
                 </button>
                 }
+
+                <button type="button" data-testid="toggle-mitigations"
+                  class="rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-100"
+                  (click)="
+                        toggleMitigations(risk.id)
+                      ">
+                  @if (
+                  expandedRiskId() === risk.id
+                  ) {
+                  Hide mitigation actions
+                  } @else {
+                  Manage mitigation actions
+                  }
+                </button>
               </div>
             </div>
 
@@ -262,6 +278,13 @@
               | date: 'dd-MM-yyyy HH:mm'
               }}
             </p>
+
+            @if (
+            expandedRiskId() === risk.id
+            ) {
+            <app-mitigation-panel [riskId]="risk.id" [riskTitle]="risk.title">
+            </app-mitigation-panel>
+            }
           </article>
           }
         </div>

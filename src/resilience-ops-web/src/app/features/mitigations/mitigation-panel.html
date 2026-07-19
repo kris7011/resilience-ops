@@ -1,0 +1,159 @@
+<section class="mt-6 rounded-xl border border-slate-200 bg-slate-50 p-5">
+    <div class="flex flex-wrap items-start justify-between gap-3">
+        <div>
+            <h4 class="font-semibold text-slate-950">
+                Mitigation actions
+            </h4>
+
+            <p class="mt-1 text-sm text-slate-500">
+                Actions assigned to
+                {{ riskTitle() }}.
+            </p>
+        </div>
+
+        <button type="button"
+            class="rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-100 disabled:opacity-50"
+            [disabled]="isLoading()" (click)="loadMitigations()">
+            @if (isLoading()) {
+            Loading...
+            } @else {
+            Refresh actions
+            }
+        </button>
+    </div>
+
+    @if (errorMessage(); as message) {
+    <div class="mt-4 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-800" role="alert">
+        {{ message }}
+    </div>
+    }
+
+    <div class="mt-5">
+        @if (isLoading()) {
+        <p class="text-sm text-slate-500">
+            Loading mitigation actions...
+        </p>
+        } @else if (
+        mitigations().length === 0
+        ) {
+        <p class="rounded-lg border border-dashed border-slate-300 bg-white p-4 text-sm text-slate-500">
+            No mitigation actions have been
+            registered for this risk.
+        </p>
+        } @else {
+        <div class="space-y-3">
+            @for (
+            mitigation of mitigations();
+            track mitigation.id
+            ) {
+            <article class="rounded-lg border border-slate-200 bg-white p-4">
+                <div class="flex flex-wrap items-start justify-between gap-3">
+                    <div>
+                        <p class="font-medium text-slate-900">
+                            {{ mitigation.description }}
+                        </p>
+
+                        <p class="mt-2 text-sm text-slate-500">
+                            Owner:
+                            <span class="font-medium text-slate-700">
+                                {{ mitigation.owner }}
+                            </span>
+                        </p>
+                    </div>
+
+                    <span class="rounded-full bg-blue-100 px-3 py-1 text-xs font-semibold text-blue-800">
+                        {{ mitigation.status }}
+                    </span>
+                </div>
+
+                <p class="mt-3 text-xs text-slate-500">
+                    Due
+                    {{
+                    mitigation.dueDateUtc
+                    | date: 'dd-MM-yyyy HH:mm'
+                    }}
+                </p>
+            </article>
+            }
+        </div>
+        }
+    </div>
+
+    <form data-testid="mitigation-form" class="mt-6 space-y-4 border-t border-slate-200 pt-5"
+        [formGroup]="mitigationForm" (ngSubmit)="createMitigation()">
+        <div>
+            <label for="mitigation-description" class="block text-sm font-medium text-slate-700">
+                Action
+            </label>
+
+            <textarea id="mitigation-description" data-testid="mitigation-description" rows="3"
+                formControlName="description"
+                class="mt-2 w-full resize-y rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-950 outline-none focus:border-slate-700"
+                placeholder="Example: Document and test the fallback procedure."></textarea>
+
+            @if (
+            mitigationForm.controls.description.touched
+            &&
+            mitigationForm.controls.description.invalid
+            ) {
+            <p class="mt-1 text-sm text-red-700">
+                An action between 1 and 500
+                characters is required.
+            </p>
+            }
+        </div>
+
+        <div class="grid gap-4 sm:grid-cols-2">
+            <div>
+                <label for="mitigation-owner" class="block text-sm font-medium text-slate-700">
+                    Owner
+                </label>
+
+                <input id="mitigation-owner" data-testid="mitigation-owner" type="text" formControlName="owner"
+                    class="mt-2 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-950 outline-none focus:border-slate-700"
+                    placeholder="Example: Platform Operations" />
+
+                @if (
+                mitigationForm.controls.owner.touched
+                &&
+                mitigationForm.controls.owner.invalid
+                ) {
+                <p class="mt-1 text-sm text-red-700">
+                    An owner between 1 and 120
+                    characters is required.
+                </p>
+                }
+            </div>
+
+            <div>
+                <label for="mitigation-due-date" class="block text-sm font-medium text-slate-700">
+                    Due date
+                </label>
+
+                <input id="mitigation-due-date" data-testid="mitigation-due-date" type="datetime-local"
+                    formControlName="dueDateLocal" [min]="minimumDueDateLocal"
+                    class="mt-2 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-950 outline-none focus:border-slate-700" />
+
+                @if (
+                mitigationForm.controls.dueDateLocal.touched
+                &&
+                mitigationForm.controls.dueDateLocal.invalid
+                ) {
+                <p class="mt-1 text-sm text-red-700">
+                    A future due date is required.
+                </p>
+                }
+            </div>
+        </div>
+
+        <button type="submit"
+            class="rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-50"
+            [disabled]="isSaving()">
+            @if (isSaving()) {
+            Saving action...
+            } @else {
+            Add mitigation action
+            }
+        </button>
+    </form>
+</section>
