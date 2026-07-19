@@ -2,12 +2,14 @@ namespace ResilienceOps.Api.Features.Risks;
 
 public interface IRiskRepository
 {
-    IReadOnlyCollection<RiskItem> GetAll();
+    Task<IReadOnlyCollection<RiskItem>> GetAllAsync(
+        CancellationToken cancellationToken);
 
-    RiskItem? GetById(Guid id);
+    Task<RiskItem?> GetByIdAsync(
+        Guid id,
+        CancellationToken cancellationToken);
 
-    RiskItem Add(
-        string title,
-        string description,
-        RiskSeverity severity);
+    Task AddAsync(
+        RiskItem risk,
+        CancellationToken cancellationToken);
 }

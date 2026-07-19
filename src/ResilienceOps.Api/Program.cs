@@ -1,5 +1,7 @@
 using System.Text.Json.Serialization;
+using Microsoft.EntityFrameworkCore;
 using ResilienceOps.Api.Contracts;
+using ResilienceOps.Api.Data;
 using ResilienceOps.Api.Features.Risks;
 
 const string FrontendCorsPolicy = "Frontend";
@@ -25,11 +27,40 @@ builder.Services.AddCors(options =>
         });
 });
 
-builder.Services.AddSingleton<
+var databaseDirectory = Path.Combine(
+    builder.Environment.ContentRootPath,
+    "Data");
+
+Directory.CreateDirectory(databaseDirectory);
+
+var databasePath = Path.Combine(
+    databaseDirectory,
+    "resilience-ops.db");
+
+builder.Services.AddDbContext<
+    ResilienceOpsDbContext>(
+    options =>
+    {
+        options.UseSqlite(
+            $"Data Source={databasePath}");
+    });
+
+builder.Services.AddScoped<
     IRiskRepository,
-    InMemoryRiskRepository>();
+    EfCoreRiskRepository>();
 
 var app = builder.Build();
+
+await using (var scope =
+    app.Services.CreateAsyncScope())
+{
+    var dbContext =
+        scope.ServiceProvider
+            .GetRequiredService<
+                ResilienceOpsDbContext>();
+
+    await dbContext.Database.MigrateAsync();
+}
 
 app.UseCors(FrontendCorsPolicy);
 
@@ -40,8 +71,10 @@ app.MapGet(
         var response = new HealthResponse(
             Status: "Healthy",
             Service: "ResilienceOps.Api",
-            Environment: environment.EnvironmentName,
-            TimestampUtc: DateTimeOffset.UtcNow);
+            Environment:
+                environment.EnvironmentName,
+            TimestampUtc:
+                DateTimeOffset.UtcNow);
 
         return Results.Ok(response);
     });

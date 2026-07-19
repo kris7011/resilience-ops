@@ -9,51 +9,68 @@ public static class RiskEndpoints
             .MapGroup("/api/risks")
             .WithTags("Risks");
 
-        group.MapGet("", GetAll);
-        group.MapGet("/{id:guid}", GetById);
-        group.MapPost("", Create);
+        group.MapGet("", GetAllAsync);
+        group.MapGet("/{id:guid}", GetByIdAsync);
+        group.MapPost("", CreateAsync);
 
         return endpoints;
     }
 
-    private static IResult GetAll(IRiskRepository repository)
+    private static async Task<IResult> GetAllAsync(
+        IRiskRepository repository,
+        CancellationToken cancellationToken)
     {
-        var risks = repository
-            .GetAll()
+        var riskItems =
+            await repository.GetAllAsync(
+                cancellationToken);
+
+        var responses = riskItems
             .Select(RiskResponse.FromRisk)
             .ToArray();
 
-        return Results.Ok(risks);
+        return Results.Ok(responses);
     }
 
-    private static IResult GetById(
+    private static async Task<IResult> GetByIdAsync(
         Guid id,
-        IRiskRepository repository)
+        IRiskRepository repository,
+        CancellationToken cancellationToken)
     {
-        var risk = repository.GetById(id);
+        var risk =
+            await repository.GetByIdAsync(
+                id,
+                cancellationToken);
 
         return risk is null
             ? Results.NotFound()
-            : Results.Ok(RiskResponse.FromRisk(risk));
+            : Results.Ok(
+                RiskResponse.FromRisk(risk));
     }
 
-    private static IResult Create(
+    private static async Task<IResult> CreateAsync(
         CreateRiskRequest request,
-        IRiskRepository repository)
+        IRiskRepository repository,
+        CancellationToken cancellationToken)
     {
         var validationErrors = Validate(request);
 
         if (validationErrors.Count > 0)
         {
-            return Results.ValidationProblem(validationErrors);
+            return Results.ValidationProblem(
+                validationErrors);
         }
 
-        var risk = repository.Add(
+        var risk = RiskItem.Create(
             title: request.Title!,
             description: request.Description!,
             severity: request.Severity);
 
-        var response = RiskResponse.FromRisk(risk);
+        await repository.AddAsync(
+            risk,
+            cancellationToken);
+
+        var response =
+            RiskResponse.FromRisk(risk);
 
         return Results.Created(
             $"/api/risks/{risk.Id}",
@@ -63,7 +80,8 @@ public static class RiskEndpoints
     private static Dictionary<string, string[]> Validate(
         CreateRiskRequest request)
     {
-        var errors = new Dictionary<string, string[]>();
+        var errors =
+            new Dictionary<string, string[]>();
 
         if (string.IsNullOrWhiteSpace(request.Title))
         {
@@ -80,14 +98,16 @@ public static class RiskEndpoints
             ];
         }
 
-        if (string.IsNullOrWhiteSpace(request.Description))
+        if (string.IsNullOrWhiteSpace(
+                request.Description))
         {
             errors["description"] =
             [
                 "Description is required."
             ];
         }
-        else if (request.Description.Trim().Length > 1000)
+        else if (
+            request.Description.Trim().Length > 1000)
         {
             errors["description"] =
             [
@@ -95,7 +115,9 @@ public static class RiskEndpoints
             ];
         }
 
-        if (!Enum.IsDefined(typeof(RiskSeverity), request.Severity))
+        if (!Enum.IsDefined(
+                typeof(RiskSeverity),
+                request.Severity))
         {
             errors["severity"] =
             [
