@@ -7,6 +7,10 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{806523E7-64C
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ResilienceOps.Api", "src\ResilienceOps.Api\ResilienceOps.Api.csproj", "{B9810884-689D-423D-9C14-A70A0D92E85A}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{9BF7C707-B644-412B-8D67-C23DCFE236E5}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ResilienceOps.Api.IntegrationTests", "tests\ResilienceOps.Api.IntegrationTests\ResilienceOps.Api.IntegrationTests.csproj", "{3304A054-4A9E-4DB8-A67E-3E42918B99CE}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -20,8 +24,13 @@ Global
 		{B9810884-689D-423D-9C14-A70A0D92E85A}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{B9810884-689D-423D-9C14-A70A0D92E85A}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{B9810884-689D-423D-9C14-A70A0D92E85A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{3304A054-4A9E-4DB8-A67E-3E42918B99CE}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3304A054-4A9E-4DB8-A67E-3E42918B99CE}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3304A054-4A9E-4DB8-A67E-3E42918B99CE}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3304A054-4A9E-4DB8-A67E-3E42918B99CE}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{B9810884-689D-423D-9C14-A70A0D92E85A} = {806523E7-64C1-44EB-B9FD-B1DB657A771B}
+		{3304A054-4A9E-4DB8-A67E-3E42918B99CE} = {9BF7C707-B644-412B-8D67-C23DCFE236E5}
 	EndGlobalSection
 EndGlobal

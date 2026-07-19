@@ -133,3 +133,7 @@ app.MapGet(
 app.MapRiskEndpoints();
 
 app.Run();
+
+public partial class Program
+{
+}
