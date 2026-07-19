@@ -1,0 +1,103 @@
+name: Continuous Integration
+
+on:
+    push:
+        branches:
+            - main
+
+    pull_request:
+        branches:
+            - main
+
+    workflow_dispatch:
+
+permissions:
+    contents: read
+
+concurrency:
+    group: ci-${{ github.workflow }}-${{ github.ref }}
+    cancel-in-progress: true
+
+jobs:
+    backend:
+        name: .NET API
+        runs-on: ubuntu-latest
+        timeout-minutes: 10
+
+        steps:
+            - name: Check out repository
+              uses: actions/checkout@v6
+
+            - name: Set up .NET SDK
+              uses: actions/setup-dotnet@v5
+              with:
+                  dotnet-version: "8.0.423"
+
+            - name: Display .NET version
+              run: dotnet --version
+
+            - name: Restore .NET dependencies
+              run: dotnet restore ResilienceOps.sln
+
+            - name: Build .NET solution
+              run: >
+                  dotnet build ResilienceOps.sln
+                  --configuration Release
+                  --no-restore
+
+            - name: Run .NET tests
+              run: >
+                  dotnet test ResilienceOps.sln
+                  --configuration Release
+                  --no-build
+                  --logger "trx;LogFileName=integration-tests.trx"
+                  --results-directory TestResults
+
+            - name: Upload .NET test results
+              if: always()
+              uses: actions/upload-artifact@v4
+              with:
+                  name: dotnet-test-results
+                  path: TestResults/**/*.trx
+                  if-no-files-found: warn
+                  retention-days: 7
+
+    frontend:
+        name: Angular web
+        runs-on: ubuntu-latest
+        timeout-minutes: 10
+
+        env:
+            CI: true
+
+        defaults:
+            run:
+                working-directory: src/resilience-ops-web
+
+        steps:
+            - name: Check out repository
+              uses: actions/checkout@v6
+
+            - name: Set up Node.js
+              uses: actions/setup-node@v6
+              with:
+                  node-version: "22.x"
+                  cache: npm
+                  cache-dependency-path: src/resilience-ops-web/package-lock.json
+
+            - name: Install repository npm version
+              run: npm install --global npm@11.12.1
+
+            - name: Display Node.js and npm versions
+              run: |
+                  node --version
+                  npm --version
+
+            - name: Install frontend dependencies
+              run: npm ci
+
+            - name: Build Angular application
+              run: npm run build
+
+            - name: Run Angular tests
+              run: npm test -- --watch=false
