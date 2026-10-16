@@ -5,9 +5,8 @@ on:
         branches:
             - main
 
+    # All target branches, so stacked pull requests are validated too.
     pull_request:
-        branches:
-            - main
 
     workflow_dispatch:
 
