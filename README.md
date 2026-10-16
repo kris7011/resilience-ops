@@ -29,7 +29,7 @@ Every technical decision should be understandable, documented and defensible in 
 
 ## Implemented features
 
-### Backend API (ASP.NET Core 8, Minimal APIs)
+### Backend API (ASP.NET Core 10 LTS, Minimal APIs)
 
 - **Health endpoint** reporting status, service name, environment and timestamp.
 - **Operational risks** with title, description, severity (`Low`, `Medium`, `High`, `Critical`) and status (`Open`, `Mitigating`, `Closed`).
@@ -49,7 +49,7 @@ Every technical decision should be understandable, documented and defensible in 
 
 ### Persistence
 
-- Entity Framework Core 8 with **SQLite**, stored in `src/ResilienceOps.Api/Data/resilience-ops.db`.
+- Entity Framework Core 10 with **SQLite**, stored in `src/ResilienceOps.Api/Data/resilience-ops.db`.
 - Migrations are applied automatically at startup (`InitialRiskDatabase`, `AddMitigationActions`).
 - Explicit model configuration: maximum lengths, enums stored as strings, `DateTimeOffset` stored as Unix milliseconds, a foreign key from mitigation actions to risks, and indexes on `RiskId` and `(RiskId, Status)`.
 - `dotnet-ef` is pinned as a local tool in `.config/dotnet-tools.json`.
@@ -128,7 +128,7 @@ resilience-ops
 │           └── features/mitigations
 ├── tests
 │   └── ResilienceOps.Api.IntegrationTests
-├── global.json                      # .NET SDK 8.0.423 (latest patch roll-forward)
+├── global.json                      # .NET SDK 10.0.402 (latest feature roll-forward)
 └── ResilienceOps.sln
 ```
 
@@ -136,7 +136,7 @@ resilience-ops
 
 ### Prerequisites
 
-- .NET SDK 8.0.423 or a later 8.0 patch (see `global.json`)
+- .NET 10 SDK 10.0.402 or later 10.0 SDK (see `global.json`)
 - Node.js 22 and npm 11
 
 ### Run the API
