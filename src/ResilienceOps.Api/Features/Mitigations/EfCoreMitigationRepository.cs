@@ -117,4 +117,93 @@ public sealed class EfCoreMitigationRepository(
             mitigation.RiskId,
             mitigation.Status);
     }
+
+    public async Task<MitigationAction?> UpdateStatusAsync(
+        Guid riskId,
+        Guid mitigationId,
+        MitigationStatus status,
+        CancellationToken cancellationToken)
+    {
+        using var activity =
+            MitigationTelemetry.ActivitySource.StartActivity(
+                "MitigationRepository.UpdateStatus",
+                ActivityKind.Internal);
+
+        activity?.SetTag(
+            "risk.id",
+            riskId.ToString());
+
+        activity?.SetTag(
+            "mitigation.id",
+            mitigationId.ToString());
+
+        activity?.SetTag(
+            "mitigation.requested_status",
+            status.ToString());
+
+        var mitigation =
+            await dbContext.MitigationActions
+                .SingleOrDefaultAsync(
+                    item =>
+                        item.Id == mitigationId
+                        &&
+                        item.RiskId == riskId,
+                    cancellationToken);
+
+        if (mitigation is null)
+        {
+            activity?.SetTag(
+                "mitigation.found",
+                false);
+
+            logger.LogDebug(
+                "Mitigation action {MitigationId} for operational risk {RiskId} was not found during status update",
+                mitigationId,
+                riskId);
+
+            return null;
+        }
+
+        activity?.SetTag(
+            "mitigation.found",
+            true);
+
+        var previousStatus = mitigation.Status;
+
+        var changed =
+            mitigation.ChangeStatus(status);
+
+        activity?.SetTag(
+            "mitigation.previous_status",
+            previousStatus.ToString());
+
+        activity?.SetTag(
+            "mitigation.new_status",
+            mitigation.Status.ToString());
+
+        activity?.SetTag(
+            "mitigation.status_changed",
+            changed);
+
+        if (changed)
+        {
+            await dbContext.SaveChangesAsync(
+                cancellationToken);
+
+            logger.LogInformation(
+                "Changed mitigation action {MitigationId} status from {PreviousStatus} to {NewStatus}",
+                mitigation.Id,
+                previousStatus,
+                mitigation.Status);
+        }
+        else
+        {
+            logger.LogDebug(
+                "Mitigation action {MitigationId} already had status {MitigationStatus}",
+                mitigation.Id,
+                mitigation.Status);
+        }
+
+        return mitigation;
+    }
 }

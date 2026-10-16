@@ -5,6 +5,7 @@ import { Observable } from 'rxjs';
 import {
     CreateMitigationRequest,
     Mitigation,
+    MitigationStatus,
 } from '../models/mitigation';
 
 @Injectable({
@@ -32,6 +33,19 @@ export class MitigationApiService {
         return this.httpClient.post<Mitigation>(
             `${this.risksApiUrl}/${riskId}/mitigations`,
             request,
+        );
+    }
+
+    updateMitigationStatus(
+        riskId: string,
+        mitigationId: string,
+        status: MitigationStatus,
+    ): Observable<Mitigation> {
+        return this.httpClient.patch<Mitigation>(
+            `${this.risksApiUrl}/${riskId}/mitigations/${mitigationId}/status`,
+            {
+                status,
+            },
         );
     }
 }

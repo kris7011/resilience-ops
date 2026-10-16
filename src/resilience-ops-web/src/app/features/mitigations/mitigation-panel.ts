@@ -16,8 +16,37 @@ import { finalize } from 'rxjs';
 import {
     CreateMitigationRequest,
     Mitigation,
+    MitigationStatus,
 } from '../../core/models/mitigation';
 import { MitigationApiService } from '../../core/services/mitigation-api.service';
+
+interface MitigationStatusAction {
+    nextStatus: MitigationStatus;
+    label: string;
+    busyLabel: string;
+}
+
+// Lifecycle: Planned -> InProgress -> Completed, with Completed actions reopened as Planned.
+const mitigationStatusActions: Record<
+    MitigationStatus,
+    MitigationStatusAction
+> = {
+    Planned: {
+        nextStatus: 'InProgress',
+        label: 'Start work',
+        busyLabel: 'Starting...',
+    },
+    InProgress: {
+        nextStatus: 'Completed',
+        label: 'Mark completed',
+        busyLabel: 'Completing...',
+    },
+    Completed: {
+        nextStatus: 'Planned',
+        label: 'Reopen',
+        busyLabel: 'Reopening...',
+    },
+};
 
 @Component({
     selector: 'app-mitigation-panel',
@@ -48,6 +77,12 @@ export class MitigationPanel implements OnInit {
 
     protected readonly isSaving =
         signal(false);
+
+    protected readonly updatingMitigationId =
+        signal<string | null>(null);
+
+    protected readonly statusActions =
+        mitigationStatusActions;
 
     protected readonly errorMessage =
         signal<string | null>(null);
@@ -182,6 +217,48 @@ export class MitigationPanel implements OnInit {
                 error: () => {
                     this.errorMessage.set(
                         'The mitigation action could not be created.',
+                    );
+                },
+            });
+    }
+
+    protected changeMitigationStatus(
+        mitigationId: string,
+        status: MitigationStatus,
+    ): void {
+        if (this.updatingMitigationId() !== null) {
+            return;
+        }
+
+        this.updatingMitigationId.set(mitigationId);
+        this.errorMessage.set(null);
+
+        this.mitigationApiService
+            .updateMitigationStatus(
+                this.riskId(),
+                mitigationId,
+                status,
+            )
+            .pipe(
+                finalize(() => {
+                    this.updatingMitigationId.set(null);
+                }),
+            )
+            .subscribe({
+                next: (updatedMitigation) => {
+                    this.mitigations.update(
+                        (currentMitigations) =>
+                            currentMitigations.map(
+                                (mitigation) =>
+                                    mitigation.id === updatedMitigation.id
+                                        ? updatedMitigation
+                                        : mitigation,
+                            ),
+                    );
+                },
+                error: () => {
+                    this.errorMessage.set(
+                        'The mitigation status could not be updated.',
                     );
                 },
             });

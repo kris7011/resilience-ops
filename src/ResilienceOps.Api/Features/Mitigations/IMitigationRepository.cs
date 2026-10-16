@@ -15,4 +15,10 @@ public interface IMitigationRepository
     Task AddAsync(
         MitigationAction mitigation,
         CancellationToken cancellationToken);
+
+    Task<MitigationAction?> UpdateStatusAsync(
+        Guid riskId,
+        Guid mitigationId,
+        MitigationStatus status,
+        CancellationToken cancellationToken);
 }
