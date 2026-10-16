@@ -1,5 +1,8 @@
 import { TestBed } from '@angular/core/testing';
-import { of } from 'rxjs';
+import {
+    of,
+    throwError,
+} from 'rxjs';
 import {
     beforeEach,
     describe,
@@ -22,6 +25,9 @@ describe('MitigationPanel', () => {
     const createMitigationMock =
         vi.fn();
 
+    const updateMitigationStatusMock =
+        vi.fn();
+
     const existingMitigation: Mitigation = {
         id:
             '17fcf344-36e7-4490-b0bd-b982554f4f1e',
@@ -41,6 +47,7 @@ describe('MitigationPanel', () => {
     beforeEach(async () => {
         getMitigationsMock.mockReset();
         createMitigationMock.mockReset();
+        updateMitigationStatusMock.mockReset();
 
         getMitigationsMock.mockReturnValue(
             of([
@@ -73,6 +80,8 @@ describe('MitigationPanel', () => {
                             getMitigationsMock,
                         createMitigation:
                             createMitigationMock,
+                        updateMitigationStatus:
+                            updateMitigationStatusMock,
                     },
                 },
             ],
@@ -204,6 +213,83 @@ describe('MitigationPanel', () => {
         ).toContain(
             'Business Continuity',
         );
+    });
+
+    it('should move a mitigation action through its status lifecycle', () => {
+        updateMitigationStatusMock.mockReturnValue(
+            of({
+                ...existingMitigation,
+                status:
+                    'InProgress',
+            }),
+        );
+
+        const fixture =
+            createFixture();
+
+        const page =
+            fixture.nativeElement as HTMLElement;
+
+        const statusButton =
+            page.querySelector<HTMLButtonElement>(
+                '[data-testid="mitigation-status-action"]',
+            );
+
+        expect(
+            statusButton?.textContent?.trim(),
+        ).toBe('Start work');
+
+        statusButton?.click();
+
+        fixture.detectChanges();
+
+        expect(
+            updateMitigationStatusMock,
+        ).toHaveBeenCalledWith(
+            riskId,
+            existingMitigation.id,
+            'InProgress',
+        );
+
+        expect(
+            page.textContent,
+        ).toContain('InProgress');
+
+        expect(
+            page.querySelector<HTMLButtonElement>(
+                '[data-testid="mitigation-status-action"]',
+            )?.textContent?.trim(),
+        ).toBe('Mark completed');
+    });
+
+    it('should show an error when the status cannot be updated', () => {
+        updateMitigationStatusMock.mockReturnValue(
+            throwError(
+                () => new Error('Network error'),
+            ),
+        );
+
+        const fixture =
+            createFixture();
+
+        const page =
+            fixture.nativeElement as HTMLElement;
+
+        page.querySelector<HTMLButtonElement>(
+            '[data-testid="mitigation-status-action"]',
+        )?.click();
+
+        fixture.detectChanges();
+
+        expect(
+            page.textContent,
+        ).toContain(
+            'The mitigation status could not be updated.',
+        );
+
+        expect(
+            page.textContent,
+        ).toContain('Planned');
     });
 
     function createFixture() {

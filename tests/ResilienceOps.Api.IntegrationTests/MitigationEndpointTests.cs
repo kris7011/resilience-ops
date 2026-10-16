@@ -242,6 +242,191 @@ public sealed class MitigationEndpointTests
             ownerErrors);
     }
 
+    [Fact]
+    public async Task UpdateMitigationStatus_ExistingAction_PersistsNewStatus()
+    {
+        var riskId =
+            await GetExistingRiskIdAsync();
+
+        var mitigationId =
+            await CreateMitigationAsync(riskId);
+
+        var request = new
+        {
+            status = "InProgress"
+        };
+
+        var patchResponse =
+            await client.PatchAsJsonAsync(
+                $"/api/risks/{riskId}/mitigations/{mitigationId}/status",
+                request);
+
+        Assert.Equal(
+            HttpStatusCode.OK,
+            patchResponse.StatusCode);
+
+        var updatedMitigation =
+            await patchResponse.Content
+                .ReadFromJsonAsync<
+                    MitigationApiResponse>();
+
+        Assert.NotNull(updatedMitigation);
+
+        Assert.Equal(
+            "InProgress",
+            updatedMitigation.Status);
+
+        var getResponse =
+            await client.GetAsync(
+                $"/api/risks/{riskId}/mitigations/{mitigationId}");
+
+        var persistedMitigation =
+            await getResponse.Content
+                .ReadFromJsonAsync<
+                    MitigationApiResponse>();
+
+        Assert.NotNull(persistedMitigation);
+
+        Assert.Equal(
+            "InProgress",
+            persistedMitigation.Status);
+    }
+
+    [Fact]
+    public async Task UpdateMitigationStatus_CanCompleteAndReopenAction()
+    {
+        var riskId =
+            await GetExistingRiskIdAsync();
+
+        var mitigationId =
+            await CreateMitigationAsync(riskId);
+
+        foreach (var status in new[] { "Completed", "Planned" })
+        {
+            var response =
+                await client.PatchAsJsonAsync(
+                    $"/api/risks/{riskId}/mitigations/{mitigationId}/status",
+                    new
+                    {
+                        status
+                    });
+
+            var mitigation =
+                await response.Content
+                    .ReadFromJsonAsync<
+                        MitigationApiResponse>();
+
+            Assert.Equal(
+                HttpStatusCode.OK,
+                response.StatusCode);
+
+            Assert.Equal(
+                status,
+                mitigation?.Status);
+        }
+    }
+
+    [Fact]
+    public async Task UpdateMitigationStatus_UnknownAction_ReturnsNotFound()
+    {
+        var riskId =
+            await GetExistingRiskIdAsync();
+
+        var response =
+            await client.PatchAsJsonAsync(
+                $"/api/risks/{riskId}/mitigations/{Guid.NewGuid()}/status",
+                new
+                {
+                    status = "Completed"
+                });
+
+        Assert.Equal(
+            HttpStatusCode.NotFound,
+            response.StatusCode);
+    }
+
+    [Fact]
+    public async Task UpdateMitigationStatus_ActionOfAnotherRisk_ReturnsNotFound()
+    {
+        var riskId =
+            await GetExistingRiskIdAsync();
+
+        var mitigationId =
+            await CreateMitigationAsync(riskId);
+
+        var response =
+            await client.PatchAsJsonAsync(
+                $"/api/risks/{Guid.NewGuid()}/mitigations/{mitigationId}/status",
+                new
+                {
+                    status = "Completed"
+                });
+
+        Assert.Equal(
+            HttpStatusCode.NotFound,
+            response.StatusCode);
+    }
+
+    [Fact]
+    public async Task UpdateMitigationStatus_InvalidStatus_ReturnsValidationProblem()
+    {
+        var response =
+            await client.PatchAsJsonAsync(
+                $"/api/risks/{Guid.NewGuid()}/mitigations/{Guid.NewGuid()}/status",
+                new
+                {
+                    status = 999
+                });
+
+        Assert.Equal(
+            HttpStatusCode.BadRequest,
+            response.StatusCode);
+
+        var validationProblem =
+            await response.Content
+                .ReadFromJsonAsync<
+                    MitigationValidationProblemResponse>();
+
+        Assert.NotNull(validationProblem);
+
+        Assert.True(
+            validationProblem.Errors.TryGetValue(
+                "status",
+                out var statusErrors));
+
+        Assert.Contains(
+            "Status is invalid.",
+            statusErrors);
+    }
+
+    private async Task<Guid> CreateMitigationAsync(
+        Guid riskId)
+    {
+        var response =
+            await client.PostAsJsonAsync(
+                $"/api/risks/{riskId}/mitigations",
+                new
+                {
+                    description =
+                        $"Rehearse the recovery runbook {Guid.NewGuid():N}",
+                    owner =
+                        "Platform Operations",
+                    dueDateUtc =
+                        DateTimeOffset.UtcNow.AddDays(30)
+                });
+
+        response.EnsureSuccessStatusCode();
+
+        var mitigation =
+            await response.Content
+                .ReadFromJsonAsync<
+                    MitigationApiResponse>();
+
+        Assert.NotNull(mitigation);
+
+        return mitigation.Id;
+    }
+
     private async Task<Guid> GetExistingRiskIdAsync()
     {
         var response =

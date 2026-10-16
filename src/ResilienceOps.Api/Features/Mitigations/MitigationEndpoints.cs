@@ -24,6 +24,10 @@ public static class MitigationEndpoints
             "",
             CreateAsync);
 
+        group.MapPatch(
+            "/{mitigationId:guid}/status",
+            UpdateStatusAsync);
+
         return endpoints;
     }
 
@@ -119,6 +123,39 @@ public static class MitigationEndpoints
         return Results.Created(
             $"/api/risks/{riskId}/mitigations/{mitigation.Id}",
             response);
+    }
+
+    private static async Task<IResult> UpdateStatusAsync(
+        Guid riskId,
+        Guid mitigationId,
+        UpdateMitigationStatusRequest request,
+        IMitigationRepository repository,
+        CancellationToken cancellationToken)
+    {
+        if (!Enum.IsDefined(request.Status))
+        {
+            return Results.ValidationProblem(
+                new Dictionary<string, string[]>
+                {
+                    ["status"] =
+                    [
+                        "Status is invalid."
+                    ]
+                });
+        }
+
+        var mitigation =
+            await repository.UpdateStatusAsync(
+                riskId,
+                mitigationId,
+                request.Status,
+                cancellationToken);
+
+        return mitigation is null
+            ? Results.NotFound()
+            : Results.Ok(
+                MitigationResponse.FromMitigation(
+                    mitigation));
     }
 
     private static Dictionary<string, string[]> Validate(
