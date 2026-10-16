@@ -18,7 +18,7 @@ Every technical decision should be understandable, documented and defensible in 
 | Area | Status |
 | --- | --- |
 | Risk register (create, list, view, status lifecycle) | Implemented |
-| Mitigation actions per risk (create, list, view) | Implemented |
+| Mitigation actions per risk (create, list, view, status lifecycle) | Implemented |
 | Angular dashboard for risks and mitigation actions | Implemented |
 | Persistence with Entity Framework Core and migrations (SQLite) | Implemented |
 | API integration tests and Angular unit tests | Implemented |
@@ -38,6 +38,7 @@ Every technical decision should be understandable, documented and defensible in 
   - Two seeded example risks are created by the initial migration.
 - **Mitigation actions** linked to a risk, with description, owner, due date and status (`Planned`, `InProgress`, `Completed`).
   - Create, list and get by id under the parent risk.
+  - Change status through a dedicated endpoint.
   - Returns `404` when the parent risk does not exist.
   - The database enforces the link with a foreign key to the risk (cascade delete).
 - **Validation** of all input, returned as RFC 7807 `ValidationProblem` responses (for example required fields, maximum lengths, valid enum values and due dates in the future).
@@ -59,7 +60,7 @@ Every technical decision should be understandable, documented and defensible in 
 - **Tailwind CSS 4** for styling.
 - Dashboard with an API health card, a risk registration form and the risk register.
 - Risk status actions that follow the lifecycle **Open → Mitigating → Closed → (reopen) Open**, with loading states and error messages.
-- An expandable **mitigation panel** per risk that lists actions and registers new ones with owner and due date.
+- An expandable **mitigation panel** per risk that lists actions, registers new ones with owner and due date, and moves actions through **Planned → InProgress → Completed → (reopen) Planned**.
 
 ### Observability
 
@@ -72,12 +73,12 @@ See [docs/observability.md](docs/observability.md) for the collected telemetry a
 
 ### Testing
 
-- **API integration tests** (`tests/ResilienceOps.Api.IntegrationTests`, xUnit) host the real API with `WebApplicationFactory` against an in-memory SQLite database. Migrations run exactly as in the application. The tests cover listing seeded risks, creating and persisting risks and mitigation actions, status changes, validation problems and `404` responses.
+- **API integration tests** (`tests/ResilienceOps.Api.IntegrationTests`, xUnit) host the real API with `WebApplicationFactory` against an in-memory SQLite database. Migrations run exactly as in the application. The tests cover listing seeded risks, creating and persisting risks and mitigation actions, risk and mitigation status changes, validation problems and `404` responses.
 - **Angular unit tests** (Vitest through the Angular unit-test builder) cover the dashboard component and the mitigation panel with mocked API services.
 
 ### Continuous integration
 
-`.github/workflows/ci.yml` runs on pushes and pull requests to `main`:
+`.github/workflows/ci.yml` runs on pushes to `main` and on all pull requests:
 
 - **.NET API**: restore, build (Release) and test with the SDK pinned in `global.json`. TRX test results are uploaded as an artifact.
 - **Angular web**: `npm ci`, production build and unit tests.
@@ -94,6 +95,7 @@ See [docs/observability.md](docs/observability.md) for the collected telemetry a
 | `GET` | `/api/risks/{riskId}/mitigations` | List mitigation actions for a risk |
 | `GET` | `/api/risks/{riskId}/mitigations/{mitigationId}` | Get a mitigation action |
 | `POST` | `/api/risks/{riskId}/mitigations` | Create a mitigation action |
+| `PATCH` | `/api/risks/{riskId}/mitigations/{mitigationId}/status` | Change mitigation action status |
 
 Example request to create a risk:
 
@@ -180,7 +182,6 @@ The following items are part of the roadmap and are **not implemented yet**.
 ### Product features
 
 - Incident management
-- Changing the status of mitigation actions (the `InProgress` and `Completed` states exist in the model but cannot be set through the API yet)
 - Audit log for changes to important records
 - Search and filtering
 - Authentication and authorization

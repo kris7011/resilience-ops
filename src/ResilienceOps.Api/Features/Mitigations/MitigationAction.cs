@@ -55,4 +55,25 @@ public sealed class MitigationAction
             status: MitigationStatus.Planned,
             createdUtc: DateTimeOffset.UtcNow);
     }
+
+    public bool ChangeStatus(
+        MitigationStatus newStatus)
+    {
+        if (!Enum.IsDefined(newStatus))
+        {
+            throw new ArgumentOutOfRangeException(
+                nameof(newStatus),
+                newStatus,
+                "The mitigation status is invalid.");
+        }
+
+        if (Status == newStatus)
+        {
+            return false;
+        }
+
+        Status = newStatus;
+
+        return true;
+    }
 }
