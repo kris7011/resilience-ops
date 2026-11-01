@@ -406,6 +406,39 @@ public sealed class IncidentEndpointTests
     }
 
     [Fact]
+    public async Task UpdateIncidentStatus_SameStatus_ReturnsConflict()
+    {
+        var riskId =
+            await CreateRiskAsync();
+
+        var incident =
+            await CreateIncidentAsync(riskId);
+
+        var response =
+            await client.PatchAsJsonAsync(
+                $"/api/risks/{riskId}/incidents/{incident.Id}/status",
+                new
+                {
+                    status = "Reported"
+                });
+
+        Assert.Equal(
+            HttpStatusCode.Conflict,
+            response.StatusCode);
+
+        var error =
+            await response.Content
+                .ReadFromJsonAsync<
+                    IncidentErrorResponse>();
+
+        Assert.NotNull(error);
+
+        Assert.Equal(
+            "The incident is already Reported.",
+            error.Error);
+    }
+
+    [Fact]
     public async Task UpdateIncidentStatus_IncidentOfAnotherRisk_ReturnsNotFound()
     {
         var riskId =

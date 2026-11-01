@@ -138,6 +138,12 @@ public sealed class Incident
                 "The incident status is invalid.");
         }
 
+        if (Status == newStatus)
+        {
+            throw new InvalidOperationException(
+                $"The incident is already {Status}.");
+        }
+
         if (!CanTransitionTo(newStatus))
         {
             throw new InvalidOperationException(
