@@ -1,0 +1,51 @@
+name: Cross-platform QA
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  dotnet:
+    name: .NET backend / ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+      - run: dotnet restore ResilienceOps.sln
+      - run: dotnet build ResilienceOps.sln --configuration Release --no-restore
+      - run: dotnet test ResilienceOps.sln --configuration Release --no-build
+
+  angular:
+    name: Angular frontend / ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, macos-latest]
+    defaults:
+      run:
+        working-directory: src/resilience-ops-web
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: src/resilience-ops-web/package-lock.json
+      - run: npm install --global npm@11.12.1
+      - run: npm ci
+      - run: npm run build
+      - run: npm test -- --watch=false
