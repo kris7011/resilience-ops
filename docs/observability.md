@@ -12,7 +12,8 @@ The API is prepared to collect:
 - exceptions
 - runtime metrics
 - structured application logs
-- custom activities from the risk feature
+- custom activities from the risk, mitigation and incident features
+  (`ResilienceOps.Api.Risks`, `ResilienceOps.Api.Mitigations`, `ResilienceOps.Api.Incidents`)
 - database dependency information
 
 ## Service identity
@@ -54,6 +55,21 @@ traces
 | where message contains "Persisted operational risk"
 | order by timestamp desc
 ```
+
+### Incident status changes
+
+Accepted changes are logged by `EfCoreIncidentRepository`; rejected
+concurrent changes are logged as warnings.
+
+```kusto
+traces
+| where message contains "Changed incident"
+    or message contains "Concurrent status change rejected"
+| order by timestamp desc
+```
+
+The `IncidentRepository.UpdateStatus` activity carries the tags
+`incident.id`, `incident.requested_status` and `incident.transition_valid`.
 
 ### API request performance
 
