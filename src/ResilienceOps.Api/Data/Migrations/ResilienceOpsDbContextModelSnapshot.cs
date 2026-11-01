@@ -15,7 +15,106 @@ namespace ResilienceOps.Api.Data.Migrations
         protected override void BuildModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
-            modelBuilder.HasAnnotation("ProductVersion", "8.0.29");
+            modelBuilder.HasAnnotation("ProductVersion", "10.0.13");
+
+            modelBuilder.Entity("ResilienceOps.Api.Features.Incidents.Incident", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.Property<long?>("ClosedUtc")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("TEXT");
+
+                    b.Property<long?>("InvestigatingUtc")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<long>("ReportedUtc")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<long?>("ResolvedUtc")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("ResponsiblePerson")
+                        .IsRequired()
+                        .HasMaxLength(120)
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("RiskId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(120)
+                        .HasColumnType("TEXT");
+
+                    b.Property<long>("UpdatedUtc")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("RiskId", "ReportedUtc");
+
+                    b.HasIndex("RiskId", "Status");
+
+                    b.ToTable("Incidents", (string)null);
+                });
+
+            modelBuilder.Entity("ResilienceOps.Api.Features.Incidents.IncidentHistoryEntry", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("IncidentId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("NewStatus")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("TEXT");
+
+                    b.Property<long>("OccurredUtc")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("PreviousStatus")
+                        .HasMaxLength(20)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Sequence")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("IncidentId", "Sequence")
+                        .IsUnique();
+
+                    b.ToTable("IncidentHistory", (string)null);
+                });
+
+            modelBuilder.Entity("ResilienceOps.Api.Features.Incidents.IncidentMitigationLink", b =>
+                {
+                    b.Property<Guid>("IncidentId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("MitigationId")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("IncidentId", "MitigationId");
+
+                    b.HasIndex("MitigationId");
+
+                    b.ToTable("IncidentMitigations", (string)null);
+                });
 
             modelBuilder.Entity("ResilienceOps.Api.Features.Mitigations.MitigationAction", b =>
                 {
@@ -110,6 +209,39 @@ namespace ResilienceOps.Api.Data.Migrations
                         });
                 });
 
+            modelBuilder.Entity("ResilienceOps.Api.Features.Incidents.Incident", b =>
+                {
+                    b.HasOne("ResilienceOps.Api.Features.Risks.RiskItem", null)
+                        .WithMany()
+                        .HasForeignKey("RiskId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("ResilienceOps.Api.Features.Incidents.IncidentHistoryEntry", b =>
+                {
+                    b.HasOne("ResilienceOps.Api.Features.Incidents.Incident", null)
+                        .WithMany("History")
+                        .HasForeignKey("IncidentId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("ResilienceOps.Api.Features.Incidents.IncidentMitigationLink", b =>
+                {
+                    b.HasOne("ResilienceOps.Api.Features.Incidents.Incident", null)
+                        .WithMany("MitigationLinks")
+                        .HasForeignKey("IncidentId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("ResilienceOps.Api.Features.Mitigations.MitigationAction", null)
+                        .WithMany()
+                        .HasForeignKey("MitigationId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("ResilienceOps.Api.Features.Mitigations.MitigationAction", b =>
                 {
                     b.HasOne("ResilienceOps.Api.Features.Risks.RiskItem", null)
@@ -117,6 +249,13 @@ namespace ResilienceOps.Api.Data.Migrations
                         .HasForeignKey("RiskId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+                });
+
+            modelBuilder.Entity("ResilienceOps.Api.Features.Incidents.Incident", b =>
+                {
+                    b.Navigation("History");
+
+                    b.Navigation("MitigationLinks");
                 });
 #pragma warning restore 612, 618
         }

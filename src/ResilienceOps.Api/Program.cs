@@ -5,6 +5,7 @@ using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
 using ResilienceOps.Api.Contracts;
 using ResilienceOps.Api.Data;
+using ResilienceOps.Api.Features.Incidents;
 using ResilienceOps.Api.Features.Mitigations;
 using ResilienceOps.Api.Features.Risks;
 
@@ -34,7 +35,8 @@ if (!string.IsNullOrWhiteSpace(
         {
             tracing.AddSource(
                 RiskTelemetry.ActivitySourceName,
-                MitigationTelemetry.ActivitySourceName);
+                MitigationTelemetry.ActivitySourceName,
+                IncidentTelemetry.ActivitySourceName);
         })
         .UseAzureMonitor(options =>
         {
@@ -88,6 +90,10 @@ builder.Services.AddScoped<
     IMitigationRepository,
     EfCoreMitigationRepository>();
 
+builder.Services.AddScoped<
+    IIncidentRepository,
+    EfCoreIncidentRepository>();
+
 var app = builder.Build();
 
 var startupLogger =
@@ -138,6 +144,7 @@ app.MapGet(
 
 app.MapRiskEndpoints();
 app.MapMitigationEndpoints();
+app.MapIncidentEndpoints();
 
 app.Run();
 
