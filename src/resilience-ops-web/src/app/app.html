@@ -268,6 +268,20 @@
                   Manage mitigation actions
                   }
                 </button>
+
+                <button type="button" data-testid="toggle-incidents"
+                  class="rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-100"
+                  (click)="
+                        toggleIncidents(risk.id)
+                      ">
+                  @if (
+                  expandedIncidentRiskId() === risk.id
+                  ) {
+                  Hide incidents
+                  } @else {
+                  Manage incidents
+                  }
+                </button>
               </div>
             </div>
 
@@ -284,6 +298,13 @@
             ) {
             <app-mitigation-panel [riskId]="risk.id" [riskTitle]="risk.title">
             </app-mitigation-panel>
+            }
+
+            @if (
+            expandedIncidentRiskId() === risk.id
+            ) {
+            <app-incident-panel [riskId]="risk.id" [riskTitle]="risk.title">
+            </app-incident-panel>
             }
           </article>
           }

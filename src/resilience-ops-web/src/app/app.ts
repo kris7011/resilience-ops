@@ -24,6 +24,7 @@ import {
 } from './core/models/risk';
 import { HealthApiService } from './core/services/health-api.service';
 import { RiskApiService } from './core/services/risk-api.service';
+import { IncidentPanel } from './features/incidents/incident-panel';
 import { MitigationPanel } from './features/mitigations/mitigation-panel';
 
 @Component({
@@ -32,6 +33,7 @@ import { MitigationPanel } from './features/mitigations/mitigation-panel';
     DatePipe,
     ReactiveFormsModule,
     MitigationPanel,
+    IncidentPanel,
   ],
   templateUrl: './app.html',
   styleUrl: './app.css',
@@ -62,6 +64,9 @@ export class App implements OnInit {
     signal<string | null>(null);
 
   protected readonly expandedRiskId =
+    signal<string | null>(null);
+
+  protected readonly expandedIncidentRiskId =
     signal<string | null>(null);
 
   protected readonly errorMessage =
@@ -210,6 +215,17 @@ export class App implements OnInit {
     riskId: string,
   ): void {
     this.expandedRiskId.update(
+      (currentRiskId) =>
+        currentRiskId === riskId
+          ? null
+          : riskId,
+    );
+  }
+
+  protected toggleIncidents(
+    riskId: string,
+  ): void {
+    this.expandedIncidentRiskId.update(
       (currentRiskId) =>
         currentRiskId === riskId
           ? null
